@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pilipili项目答辩PPT</title>
+    <style>
+        :root {
+            --primary-color: #409EFF; /* Element Plus Blue */
+            --success-color: #67C23A; /* Element Plus Green */
+            --text-color: #303133;
+            --bg-color: #f5f7fa;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+            background-color: #e9e9e9;
+            color: var(--text-color);
+        }
+
+        .slide-container {
+            width: 210mm; /* A4 width */
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px 0;
+        }
+
+        .slide {
+            width: 1000px;
+            height: 562.5px; /* 16:9 Aspect Ratio */
+            background: white;
+            margin: 0 auto;
+            padding: 40px 60px;
+            box-sizing: border-box;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            page-break-after: always; /* For PDF printing */
+        }
+
+        /* Cover Slide */
+        .slide.cover {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c6e2ff 100%);
+        }
+
+        .slide.cover h1 {
+            font-size: 48px;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        .slide.cover h2 {
+            font-size: 28px;
+            color: #606266;
+            font-weight: normal;
+            margin-bottom: 60px;
+        }
+
+        .info-box {
+            display: flex;
+            gap: 20px;
+            font-size: 18px;
+            color: #606266;
+        }
+
+        /* Content Slides */
+        .slide-header {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .slide-header h2 {
+            margin: 0;
+            font-size: 32px;
+            color: var(--primary-color);
+        }
+
+        .slide-header span {
+            font-size: 14px;
+            color: #909399;
+        }
+
+        .content {
+            flex: 1;
+            font-size: 20px;
+            line-height: 1.6;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 15px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        li::before {
+            content: "•";
+            color: var(--primary-color);
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        .highlight {
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        .columns {
+            display: flex;
+            gap: 40px;
+            height: 100%;
+        }
+
+        .col {
+            flex: 1;
+        }
+
+        .card {
+            background: #f4f4f5;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            font-size: 22px;
+        }
+
+        /* Mermaid Diagram Placeholder Styles */
+        .diagram-box {
+            background: #fff;
+            border: 1px dashed #ccc;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            margin: 20px 0;
+            color: #909399;
+            font-style: italic;
+        }
+        
+        /* Specific Styles for Charts */
+        .chart-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #ecf5ff;
+            color: var(--primary-color);
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        @media print {
+            body {
+                background: none;
+            }
+            .slide-container {
+                width: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            .slide {
+                margin: 0;
+                box-shadow: none;
+                page-break-after: always;
+                border: none;
+            }
+            /* Hide non-printable elements if any */
+        }
+    </style>
+</head>
+<body>
+
+<div class="slide-container">
+
+    <!-- Slide 1: Cover -->
+    <div class="slide cover">
+        <h1>pilipili 个人视频网站设计与实现</h1>
+        <h2>基于 Vue3 + Element Plus 的视频管理系统</h2>
+        <div class="info-box">
+            <span>Vue 3</span> | 
+            <span>Vite</span> | 
+            <span>Pinia</span> | 
+            <span>Element Plus</span>
+        </div>
+        <div style="margin-top: 40px; font-size: 16px; color: #909399;">
+            汇报人：小组全体成员
+        </div>
+    </div>
+
+    <!-- Slide 2: Context -->
+    <div class="slide">
+        <div class="slide-header">
+            <h2>项目背景与现状</h2>
+            <span>01 / Background</span>
+        </div>
+        <div class="content columns">
+            <div class="col">
+                <div class="card">
+                    <h3>🚫 行业痛点</h3>
+                    <ul>
+                        <li>商业平台规则限制多，无法完全掌控数据</li>
+                        <li>本地文件管理混乱，难以快速检索</li>
+                        <li>缺乏可视化的数据统计与分析工具</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card" style="border-left-color: var(--success-color);">
+                    <h3>✅ 解决方案</h3>
+                    <ul>
+                        <li><span style="color:var(--success-color)">自主掌控</span>：打造私有化视频资产库</li>
+                        <li><span style="color:var(--success-color)">高效检索</span>：多维度筛选与分类</li>
+                        <li><span style="color:var(--success-color)">数据可视</span>：ECharts 动态图表展示</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 3: Functional Architecture -->
+    <div class="slide">
+        <div class="slide-header">
+            <h2>核心功能架构</h2>
+            <span>02 / Architecture</span>
+        </div>
+        <div class="content">
+            <div class="columns">
+                <div class="col">
+                    <div class="card">
+                        <h3>👤 用户模块</h3>
+                        <ul>
+                            <li>注册 / 登录 (表单验证)</li>
+                            <li>个人信息管理</li>
+                            <li>头像上传</li>
+                            <li>密码修改</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>📊 数据统计</h3>
+                        <ul>
+                            <li>播放量折线图</li>
+                            <li>点赞量柱状图</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card">
+                        <h3>🎬 视频管理 (核心)</h3>
+                        <ul>
+                            <li>列表展示 (分页)</li>
+                            <li><span class="highlight">多条件模糊搜索</span></li>
+                            <li>批量删除 (二次确认)</li>
+                            <li><span class="highlight">CSV 数据导出</span></li>
+                            <li>在线视频播放</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 4: Technical Stack -->
+    <div class="slide">
+        <div class="slide-header">
+            <h2>技术选型与架构</h2>
+            <span>03 / Technology</span>
+        </div>
+        <div class="content">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="card">
+                    <h3>视图层 (View)</h3>
+                    <p>Element Plus, ECharts, Video.js</p>
+                </div>
+                <div class="card">
+                    <h3>逻辑层 (ViewModel)</h3>
+                    <p>Vue 3 Composition API, Pinia, Vue Router</p>
+                </div>
+                <div class="card">
+                    <h3>数据层 (Model)</h3>
+                    <p>Axios, Mock.js</p>
+                </div>
+                <div class="card">
+                    <h3>构建工具</h3>
+                    <p>Vite (极速冷启动)</p>
+                </div>
+            </div>
+            <div class="diagram-box">
+                [ MVVM 架构分层图示：View <--> ViewModel <--> Model ]
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 5: Highlight - Export -->
+    <div class="slide">
+        <div class="slide-header">
+            <h2>亮点功能：纯前端数据导出</h2>
+            <span>04 / Highlights</span>
+        </div>
+        <div class="content">
+            <p><strong>无需后端参与，直接将表格数据导出为 CSV 文件</strong></p>
+            <div style="background: #282c34; color: #abb2bf; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 16px; margin-top: 20px;">
+                1. 获取筛选后数据 filteredData<br>
+                2. JSON -> CSV 字符串转换<br>
+                3. new Blob([csvContent], { type: 'text/csv' })<br>
+                4. URL.createObjectURL(blob) 生成链接<br>
+                5. document.createElement('a').click() 触发下载
+            </div>
+            <div class="diagram-box" style="height: 120px; margin-top: 20px;">
+                [ 流程：点击按钮 -> 生成 Blob -> 触发下载 -> 保存文件 ]
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 6: Highlight - Search -->
+    <div class="slide">
+        <div class="slide-header">
+            <h2>亮点功能：高性能实时搜索</h2>
+            <span>05 / Highlights</span>
+        </div>
+        <div class="content">
+            <div class="columns">
+                <div class="col">
+                    <h3>实现原理</h3>
+                    <p>利用 Vue 3 <span class="highlight">computed</span> 计算属性自动追踪依赖。</p>
+                    <ul>
+                        <li>标题：模糊匹配 (includes)</li>
+                        <li>类型：精确匹配 (===)</li>
+                        <li>逻辑：Result = Condition A && Condition B</li>
+                    </ul>
+                </div>
+                <div class="col">
+                    <div class="card">
+                        <h3>核心优势</h3>
+                        <ul>
+                            <li>⚡ <strong>响应极快</strong>：纯本地计算，无网络延迟</li>
+                            <li>🔄 <strong>自动更新</strong>：输入变化即刻反馈</li>
+                            <li>📉 <strong>减负</strong>：大幅降低服务器查询压力</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 7: Testing & Future -->
+    <div class="slide">
+        <div class="slide-header">
+            <h2>测试与未来展望</h2>
+            <span>06 / Summary</span>
+        </div>
+        <div class="content">
+            <div class="columns">
+                <div class="col">
+                    <h3>🧪 测试情况</h3>
+                    <ul>
+                        <li><strong>功能测试</strong>：搜索、批量删除、导出均通过</li>
+                        <li><strong>兼容性</strong>：Chrome / Edge 完美适配</li>
+                        <li><strong>稳定性</strong>：无明显 Bug，交互流畅</li>
+                    </ul>
+                </div>
+                <div class="col">
+                    <h3>🚀 后续计划</h3>
+                    <ul>
+                        <li><span style="color: #909399">Phase 1:</span> 对接 Spring Boot + MySQL</li>
+                        <li><span style="color: #909399">Phase 2:</span> 接入 OSS 对象存储</li>
+                        <li><span style="color: #909399">Phase 3:</span> 移动端 H5 适配</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 8: Thank You -->
+    <div class="slide cover">
+        <h1 style="color: var(--primary-color);">感谢聆听</h1>
+        <h2>请各位老师批评指正</h2>
+        <div style="margin-top: 60px;">
+            pilipili 个人视频网站小组
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
