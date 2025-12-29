@@ -1,0 +1,844 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampusHub 数据库连接实现详解</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 36px;
+      margin-bottom: 10px;
+    }
+    .content {
+      padding: 40px;
+    }
+    .section {
+      margin-bottom: 50px;
+    }
+    .section-title {
+      font-size: 28px;
+      color: #667eea;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 3px solid #667eea;
+    }
+    .architecture-diagram {
+      background: #f8fafc;
+      padding: 30px;
+      border-radius: 15px;
+      margin: 30px 0;
+    }
+    .layer {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      margin: 15px 0;
+      border-left: 4px solid #667eea;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .layer h4 {
+      color: #667eea;
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+    .code-block {
+      background: #2d3748;
+      color: #e2e8f0;
+      padding: 25px;
+      border-radius: 10px;
+      overflow-x: auto;
+      margin: 20px 0;
+      position: relative;
+    }
+    .code-block::before {
+      content: attr(data-lang);
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      background: #667eea;
+      color: white;
+      padding: 3px 10px;
+      border-radius: 5px;
+      font-size: 12px;
+    }
+    .code-block pre {
+      margin: 0;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .code-comment { color: #68d391; }
+    .code-keyword { color: #f687b3; }
+    .code-string { color: #fbd38d; }
+    .code-function { color: #63b3ed; }
+    .explanation {
+      background: #f7fafc;
+      padding: 20px;
+      border-left: 4px solid #667eea;
+      border-radius: 5px;
+      margin: 20px 0;
+    }
+    .tip-box {
+      background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+      padding: 20px;
+      border-radius: 10px;
+      margin: 20px 0;
+    }
+    .tip-box h4 {
+      color: #667eea;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .highlight {
+      background: #fef5e7;
+      padding: 2px 6px;
+      border-radius: 3px;
+      color: #d97706;
+      font-weight: 600;
+    }
+    .flow-step {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin: 20px 0;
+      padding: 20px;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      border-radius: 10px;
+    }
+    .step-number {
+      width: 50px;
+      height: 50px;
+      background: #667eea;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+    .step-content {
+      flex: 1;
+    }
+    .step-content h4 {
+      color: #1e293b;
+      margin-bottom: 5px;
+    }
+    @media (max-width: 768px) {
+      .content { padding: 20px; }
+      .header h1 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🗄️ CampusHub 数据库连接实现详解</h1>
+      <p>深入理解前端如何通过 Supabase 连接 PostgreSQL 数据库</p>
+    </div>
+
+    <div class="content">
+      <!-- 第一部分：整体架构 -->
+      <div class="section">
+        <h2 class="section-title">🏗️ 整体架构</h2>
+        <p style="font-size: 16px; line-height: 1.8; margin-bottom: 30px;">
+          CampusHub 使用 <span class="highlight">Supabase</span> 作为后端服务，Supabase 是一个基于 <span class="highlight">PostgreSQL</span> 的开源 BaaS（Backend as a Service）平台。前端通过 Supabase 客户端 SDK 与数据库通信。
+        </p>
+
+        <div class="architecture-diagram">
+          <h3 style="color: #667eea; margin-bottom: 20px; text-align: center;">📊 三层架构图</h3>
+          
+          <div class="layer">
+            <h4>🎨 第一层：前端应用（Vue 3）</h4>
+            <p>• 用户界面和交互逻辑<br>
+               • 调用 Supabase 客户端 SDK<br>
+               • 位置：<code>src/views/</code>, <code>src/components/</code></p>
+          </div>
+
+          <div style="text-align: center; font-size: 30px; color: #667eea; margin: 10px 0;">↓</div>
+
+          <div class="layer">
+            <h4>⚡ 第二层：Supabase 服务（中间层）</h4>
+            <p>• RESTful API 接口<br>
+               • 身份认证服务（Auth）<br>
+               • 实时订阅服务<br>
+               • 存储服务（Storage）<br>
+               • 位置：云端 Supabase 服务器</p>
+          </div>
+
+          <div style="text-align: center; font-size: 30px; color: #667eea; margin: 10px 0;">↓</div>
+
+          <div class="layer">
+            <h4>🗄️ 第三层：PostgreSQL 数据库</h4>
+            <p>• 存储所有业务数据<br>
+               • 执行 SQL 查询<br>
+               • 行级安全策略（RLS）<br>
+               • 位置：Supabase 托管的 PostgreSQL 实例</p>
+          </div>
+        </div>
+      </div>
+      <!-- 第二部分：连接配置 -->
+      <div class="section">
+        <h2 class="section-title">🔧 步骤1：配置连接信息</h2>
+        <p style="font-size: 16px; line-height: 1.8; margin-bottom: 20px;">
+          首先需要在环境变量文件中配置 Supabase 的连接信息。这些信息来自 Supabase 后台。
+        </p>
+
+        <div class="code-block" data-lang=".env.local">
+<pre><span class="code-comment"># Supabase 项目 API 地址</span>
+<span class="code-keyword">VITE_SUPABASE_URL</span>=<span class="code-string">https://ydpizzozekqjsgvxtqnk.supabase.co</span>
+
+<span class="code-comment"># Supabase 匿名访问密钥（公开密钥）</span>
+<span class="code-keyword">VITE_SUPABASE_ANON_KEY</span>=<span class="code-string">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</span></pre>
+        </div>
+
+        <div class="explanation">
+          <h4>🔍 配置项详解</h4>
+          <p>
+            <strong>VITE_SUPABASE_URL：</strong><br>
+            • 这是你的 Supabase 项目的 API 端点地址<br>
+            • 格式：<code>https://[项目ID].supabase.co</code><br>
+            • 所有 API 请求都会发送到这个地址<br><br>
+
+            <strong>VITE_SUPABASE_ANON_KEY：</strong><br>
+            • 这是一个 JWT（JSON Web Token）<br>
+            • 用于客户端身份验证<br>
+            • 虽然是"公开"密钥，但真正的权限由数据库的 RLS 策略控制<br>
+            • 可以安全地在前端代码中使用
+          </p>
+        </div>
+
+        <div class="tip-box">
+          <h4>💡 如何获取这些配置？</h4>
+          <ul style="margin-left: 20px; line-height: 1.8;">
+            <li>登录 <a href="https://supabase.com" target="_blank">Supabase 后台</a></li>
+            <li>选择你的项目</li>
+            <li>进入 Settings → API</li>
+            <li>复制 Project URL 和 anon/public key</li>
+          </ul>
+        </div>
+      </div>
+      <!-- 第三部分：初始化客户端 -->
+      <div class="section">
+        <h2 class="section-title">⚙️ 步骤2：初始化 Supabase 客户端</h2>
+        <p style="font-size: 16px; line-height: 1.8; margin-bottom: 20px;">
+          在 <span class="highlight">src/supabase.js</span> 文件中创建 Supabase 客户端实例。这个实例会被整个应用共享使用。
+        </p>
+
+        <div class="code-block" data-lang="JavaScript">
+<pre><span class="code-comment">// 1. 导入 Supabase 客户端创建函数</span>
+<span class="code-keyword">import</span> { createClient } <span class="code-keyword">from</span> <span class="code-string">'@supabase/supabase-js'</span>
+
+<span class="code-comment">// 2. 从环境变量读取配置</span>
+<span class="code-keyword">const</span> supabaseUrl = <span class="code-function">import.meta.env</span>.VITE_SUPABASE_URL
+<span class="code-keyword">const</span> supabaseAnonKey = <span class="code-function">import.meta.env</span>.VITE_SUPABASE_ANON_KEY
+
+<span class="code-comment">// 3. 创建 Supabase 客户端实例</span>
+<span class="code-keyword">export const</span> supabase = <span class="code-function">createClient</span>(supabaseUrl, supabaseAnonKey, {
+  <span class="code-function">auth</span>: {
+    <span class="code-function">persistSession</span>: <span class="code-keyword">true</span>,        <span class="code-comment">// 持久化会话到 localStorage</span>
+    <span class="code-function">autoRefreshToken</span>: <span class="code-keyword">true</span>,      <span class="code-comment">// 自动刷新过期的 token</span>
+    <span class="code-function">detectSessionInUrl</span>: <span class="code-keyword">true</span>    <span class="code-comment">// 从 URL 检测会话（用于邮箱验证）</span>
+  }
+})</pre>
+        </div>
+
+        <div class="explanation">
+          <h4>🎯 createClient 做了什么？</h4>
+          <p>
+            当调用 <code>createClient()</code> 时，Supabase SDK 会：<br><br>
+            
+            <strong>1. 建立 HTTP 连接：</strong><br>
+            • 创建一个 HTTP 客户端，指向你的 Supabase API 地址<br>
+            • 所有请求都会通过 HTTPS 加密传输<br><br>
+
+            <strong>2. 配置认证头：</strong><br>
+            • 在每个请求的 Header 中自动添加 <code>apikey</code><br>
+            • 如果用户已登录，还会添加 <code>Authorization: Bearer [token]</code><br><br>
+
+            <strong>3. 初始化子模块：</strong><br>
+            • <code>supabase.auth</code> - 认证模块<br>
+            • <code>supabase.from()</code> - 数据库查询模块<br>
+            • <code>supabase.storage</code> - 文件存储模块<br>
+            • <code>supabase.realtime</code> - 实时订阅模块
+          </p>
+        </div>
+      </div>
+      <!-- 第四部分：数据库操作 -->
+      <div class="section">
+        <h2 class="section-title">💾 步骤3：执行数据库操作</h2>
+        <p style="font-size: 16px; line-height: 1.8; margin-bottom: 20px;">
+          通过 Supabase 客户端，我们可以执行各种数据库操作。以获取商品列表为例：
+        </p>
+
+        <div class="code-block" data-lang="JavaScript">
+<pre><span class="code-comment">// storage.js - 获取商品列表</span>
+<span class="code-keyword">export async function</span> <span class="code-function">getProducts</span>() {
+  <span class="code-comment">// 1. 调用 Supabase 查询 API</span>
+  <span class="code-keyword">const</span> { data, error } = <span class="code-keyword">await</span> supabase
+    .<span class="code-function">from</span>(<span class="code-string">'products'</span>)           <span class="code-comment">// 指定表名</span>
+    .<span class="code-function">select</span>(<span class="code-string">'*'</span>)                  <span class="code-comment">// 选择所有列</span>
+    .<span class="code-function">order</span>(<span class="code-string">'id'</span>, { <span class="code-function">ascending</span>: <span class="code-keyword">false</span> })  <span class="code-comment">// 按 ID 降序排序</span>
+  
+  <span class="code-comment">// 2. 错误处理</span>
+  <span class="code-keyword">if</span> (error) {
+    <span class="code-function">console.error</span>(<span class="code-string">'Error fetching products:'</span>, error)
+    <span class="code-keyword">return</span> []
+  }
+  
+  <span class="code-comment">// 3. 返回数据</span>
+  <span class="code-keyword">return</span> data
+}</pre>
+        </div>
+
+        <div class="tip-box">
+          <h4>🔍 这段代码背后发生了什么？</h4>
+          <ul style="margin-left: 20px; line-height: 1.8;">
+            <li><strong>第1步：</strong>Supabase SDK 构建一个 HTTP GET 请求</li>
+            <li><strong>第2步：</strong>请求发送到 <code>https://xxx.supabase.co/rest/v1/products</code></li>
+            <li><strong>第3步：</strong>Supabase 服务器接收请求，验证 API Key</li>
+            <li><strong>第4步：</strong>Supabase 将请求转换为 SQL 查询</li>
+            <li><strong>第5步：</strong>PostgreSQL 执行查询：<code>SELECT * FROM products ORDER BY id DESC</code></li>
+            <li><strong>第6步：</strong>数据库返回结果给 Supabase</li>
+            <li><strong>第7步：</strong>Supabase 将结果转换为 JSON 格式</li>
+            <li><strong>第8步：</strong>前端接收 JSON 数据</li>
+          </ul>
+        </div>
+      </div>
+      <!-- 第五部分：HTTP 请求详解 -->
+      <div class="section">
+        <h2 class="section-title">🌐 HTTP 请求详解</h2>
+        <p style="font-size: 16px; line-height: 1.8; margin-bottom: 20px;">
+          Supabase SDK 实际上是通过 HTTP 请求与服务器通信的。让我们看看一个完整的请求是什么样的：
+        </p>
+
+        <div class="code-block" data-lang="HTTP Request">
+<pre><span class="code-keyword">GET</span> <span class="code-string">https://ydpizzozekqjsgvxtqnk.supabase.co/rest/v1/products?select=*&order=id.desc</span>
+
+<span class="code-comment">Headers:</span>
+<span class="code-function">apikey</span>: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+<span class="code-function">Authorization</span>: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+<span class="code-function">Content-Type</span>: application/json
+<span class="code-function">Prefer</span>: return=representation</pre>
+        </div>
+
+        <div class="explanation">
+          <h4>📋 请求头说明</h4>
+          <p>
+            <strong>apikey：</strong>你的 Supabase 匿名密钥，用于识别项目<br>
+            <strong>Authorization：</strong>用户的 JWT token（如果已登录）<br>
+            <strong>Content-Type：</strong>指定请求和响应的数据格式为 JSON<br>
+            <strong>Prefer：</strong>告诉服务器返回完整的数据对象
+          </p>
+        </div>
+
+        <div class="code-block" data-lang="HTTP Response">
+<pre><span class="code-keyword">Status:</span> <span class="code-string">200 OK</span>
+
+<span class="code-comment">Response Body:</span>
+[
+  {
+    <span class="code-string">"id"</span>: 1,
+    <span class="code-string">"name"</span>: <span class="code-string">"二手自行车"</span>,
+    <span class="code-string">"price"</span>: 200,
+    <span class="code-string">"category"</span>: <span class="code-string">"交通工具"</span>,
+    <span class="code-string">"user_id"</span>: <span class="code-string">"uuid-here"</span>,
+    <span class="code-string">"created_at"</span>: <span class="code-string">"2024-01-01T00:00:00Z"</span>
+  },
+  ...
+]</pre>
+        </div>
+      </div>
+      <!-- 第六部分：数据库表结构 -->
+      <div class="section">
+        <h2 class="section-title">🗃️ 数据库表结构</h2>
+        <p style="font-size: 16px; line-height: 1.8; margin-bottom: 20px;">
+          在 Supabase 后台，我们需要先创建数据库表。以下是创建表的 SQL 语句：
+        </p>
+
+        <div class="code-block" data-lang="SQL">
+<pre><span class="code-comment">-- 创建商品表</span>
+<span class="code-keyword">CREATE TABLE</span> products (
+  id <span class="code-keyword">BIGSERIAL PRIMARY KEY</span>,           <span class="code-comment">-- 自增主键</span>
+  name <span class="code-keyword">TEXT NOT NULL</span>,                  <span class="code-comment">-- 商品名称</span>
+  price <span class="code-keyword">NUMERIC</span>,                        <span class="code-comment">-- 价格</span>
+  category <span class="code-keyword">TEXT</span>,                        <span class="code-comment">-- 分类</span>
+  description <span class="code-keyword">TEXT</span>,                     <span class="code-comment">-- 描述</span>
+  user_id <span class="code-keyword">UUID REFERENCES</span> auth.users(id), <span class="code-comment">-- 卖家ID（外键）</span>
+  created_at <span class="code-keyword">TIMESTAMP WITH TIME ZONE DEFAULT NOW()</span>
+);
+
+<span class="code-comment">-- 创建索引以提高查询性能</span>
+<span class="code-keyword">CREATE INDEX</span> idx_products_user_id <span class="code-keyword">ON</span> products(user_id);
+<span class="code-keyword">CREATE INDEX</span> idx_products_category <span class="code-keyword">ON</span> products(category);</pre>
+        </div>
+
+        <div class="explanation">
+          <h4>🔑 关键概念</h4>
+          <p>
+            <strong>BIGSERIAL：</strong>自动递增的整数类型，用作主键<br>
+            <strong>UUID：</strong>通用唯一识别码，Supabase Auth 使用 UUID 作为用户 ID<br>
+            <strong>REFERENCES：</strong>外键约束，确保 user_id 必须存在于 auth.users 表中<br>
+            <strong>TIMESTAMP WITH TIME ZONE：</strong>带时区的时间戳，自动记录创建时间<br>
+            <strong>INDEX：</strong>索引可以加快查询速度，特别是在大数据量时
+          </p>
+        </div>
+      </div>
+      <!-- 第七部分：RLS 安全策略 -->
+      <div class="section">
+        <h2 class="section-title">🔒 行级安全策略（RLS）</h2>
+        <p style="font-size: 16px; line-height: 1.8; margin-bottom: 20px;">
+          Supabase 使用 <span class="highlight">Row Level Security (RLS)</span> 来保护数据。即使有人获取了你的 API Key，也无法访问未授权的数据。
+        </p>
+
+        <div class="code-block" data-lang="SQL">
+<pre><span class="code-comment">-- 1. 启用 RLS</span>
+<span class="code-keyword">ALTER TABLE</span> products <span class="code-keyword">ENABLE ROW LEVEL SECURITY</span>;
+
+<span class="code-comment">-- 2. 创建策略：所有人都可以查看商品</span>
+<span class="code-keyword">CREATE POLICY</span> <span class="code-string">"Anyone can view products"</span> <span class="code-keyword">ON</span> products
+  <span class="code-keyword">FOR SELECT</span>
+  <span class="code-keyword">USING</span> (<span class="code-keyword">true</span>);
+
+<span class="code-comment">-- 3. 创建策略：只有登录用户可以添加商品</span>
+<span class="code-keyword">CREATE POLICY</span> <span class="code-string">"Authenticated users can insert"</span> <span class="code-keyword">ON</span> products
+  <span class="code-keyword">FOR INSERT</span>
+  <span class="code-keyword">WITH CHECK</span> (auth.<span class="code-function">uid</span>() = user_id);
+
+<span class="code-comment">-- 4. 创建策略：用户只能修改自己的商品</span>
+<span class="code-keyword">CREATE POLICY</span> <span class="code-string">"Users can update own products"</span> <span class="code-keyword">ON</span> products
+  <span class="code-keyword">FOR UPDATE</span>
+  <span class="code-keyword">USING</span> (auth.<span class="code-function">uid</span>() = user_id);
+
+<span class="code-comment">-- 5. 创建策略：用户只能删除自己的商品</span>
+<span class="code-keyword">CREATE POLICY</span> <span class="code-string">"Users can delete own products"</span> <span class="code-keyword">ON</span> products
+  <span class="code-keyword">FOR DELETE</span>
+  <span class="code-keyword">USING</span> (auth.<span class="code-function">uid</span>() = user_id);</pre>
+        </div>
+
+        <div class="explanation">
+          <h4>🛡️ RLS 工作原理</h4>
+          <p>
+            <strong>1. 请求到达：</strong>用户发送查询请求<br>
+            <strong>2. 身份验证：</strong>Supabase 验证 JWT token，获取用户 ID<br>
+            <strong>3. 应用策略：</strong>PostgreSQL 自动在 SQL 查询中添加 WHERE 条件<br>
+            <strong>4. 执行查询：</strong>只返回符合策略的数据<br><br>
+
+            例如，当用户执行 <code>SELECT * FROM products</code> 时，<br>
+            实际执行的是：<code>SELECT * FROM products WHERE true</code>（查看策略）<br><br>
+
+            当用户执行 <code>DELETE FROM products WHERE id = 1</code> 时，<br>
+            实际执行的是：<code>DELETE FROM products WHERE id = 1 AND user_id = '当前用户ID'</code>
+          </p>
+        </div>
+      </div>
+      <!-- 第八部分：完整流程示例 -->
+      <div class="section">
+        <h2 class="section-title">🔄 完整数据流程示例</h2>
+        <p style="font-size: 16px; line-height: 1.8; margin-bottom: 20px;">
+          让我们通过一个完整的例子，看看从前端到数据库的整个数据流：
+        </p>
+
+        <div class="flow-step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h4>用户在前端点击"获取商品列表"</h4>
+            <p>Vue 组件调用：<code>getProducts()</code></p>
+          </div>
+        </div>
+
+        <div class="flow-step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h4>前端调用 Supabase SDK</h4>
+            <p><code>supabase.from('products').select('*')</code></p>
+          </div>
+        </div>
+
+        <div class="flow-step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h4>SDK 构建 HTTP 请求</h4>
+            <p>GET https://xxx.supabase.co/rest/v1/products?select=*</p>
+          </div>
+        </div>
+
+        <div class="flow-step">
+          <div class="step-number">4</div>
+          <div class="step-content">
+            <h4>请求通过互联网发送到 Supabase 服务器</h4>
+            <p>HTTPS 加密传输，包含 API Key 和 JWT Token</p>
+          </div>
+        </div>
+
+        <div class="flow-step">
+          <div class="step-number">5</div>
+          <div class="step-content">
+            <h4>Supabase 验证请求</h4>
+            <p>检查 API Key 是否有效，验证 JWT Token（如果有）</p>
+          </div>
+        </div>
+
+        <div class="flow-step">
+          <div class="step-number">6</div>
+          <div class="step-content">
+            <h4>Supabase 转换为 SQL 查询</h4>
+            <p><code>SELECT * FROM products WHERE [RLS策略]</code></p>
+          </div>
+        </div>
+
+        <div class="flow-step">
+          <div class="step-number">7</div>
+          <div class="step-content">
+            <h4>PostgreSQL 执行查询</h4>
+            <p>数据库引擎执行 SQL，返回结果集</p>
+          </div>
+        </div>
+
+        <div class="flow-step">
+          <div class="step-number">8</div>
+          <div class="step-content">
+            <h4>Supabase 格式化响应</h4>
+            <p>将数据库结果转换为 JSON 格式</p>
+          </div>
+        </div>
+
+        <div class="flow-step">
+          <div class="step-number">9</div>
+          <div class="step-content">
+            <h4>HTTP 响应返回前端</h4>
+            <p>通过 HTTPS 将 JSON 数据发送回浏览器</p>
+          </div>
+        </div>
+
+        <div class="flow-step">
+          <div class="step-number">10</div>
+          <div class="step-content">
+            <h4>前端接收并渲染数据</h4>
+            <p>Vue 组件更新界面，显示商品列表</p>
+          </div>
+        </div>
+      </div>
+      <!-- 第九部分：常见操作示例 -->
+      <div class="section">
+        <h2 class="section-title">💡 常见数据库操作示例</h2>
+
+        <h3 style="color: #667eea; margin: 30px 0 15px;">1️⃣ 查询数据（SELECT）</h3>
+        <div class="code-block" data-lang="JavaScript">
+<pre><span class="code-comment">// 查询所有商品</span>
+<span class="code-keyword">const</span> { data } = <span class="code-keyword">await</span> supabase.<span class="code-function">from</span>(<span class="code-string">'products'</span>).<span class="code-function">select</span>(<span class="code-string">'*'</span>)
+
+<span class="code-comment">// 查询特定列</span>
+<span class="code-keyword">const</span> { data } = <span class="code-keyword">await</span> supabase.<span class="code-function">from</span>(<span class="code-string">'products'</span>).<span class="code-function">select</span>(<span class="code-string">'id, name, price'</span>)
+
+<span class="code-comment">// 带条件查询</span>
+<span class="code-keyword">const</span> { data } = <span class="code-keyword">await</span> supabase
+  .<span class="code-function">from</span>(<span class="code-string">'products'</span>)
+  .<span class="code-function">select</span>(<span class="code-string">'*'</span>)
+  .<span class="code-function">eq</span>(<span class="code-string">'category'</span>, <span class="code-string">'电子产品'</span>)      <span class="code-comment">// WHERE category = '电子产品'</span>
+  .<span class="code-function">gte</span>(<span class="code-string">'price'</span>, 100)              <span class="code-comment">// AND price >= 100</span>
+  .<span class="code-function">order</span>(<span class="code-string">'created_at'</span>, { <span class="code-function">ascending</span>: <span class="code-keyword">false</span> })  <span class="code-comment">// ORDER BY created_at DESC</span></pre>
+        </div>
+
+        <h3 style="color: #667eea; margin: 30px 0 15px;">2️⃣ 插入数据（INSERT）</h3>
+        <div class="code-block" data-lang="JavaScript">
+<pre><span class="code-comment">// 插入单条数据</span>
+<span class="code-keyword">const</span> { data, error } = <span class="code-keyword">await</span> supabase
+  .<span class="code-function">from</span>(<span class="code-string">'products'</span>)
+  .<span class="code-function">insert</span>([
+    { 
+      <span class="code-function">name</span>: <span class="code-string">'二手自行车'</span>,
+      <span class="code-function">price</span>: 200,
+      <span class="code-function">category</span>: <span class="code-string">'交通工具'</span>,
+      <span class="code-function">user_id</span>: <span class="code-string">'当前用户ID'</span>
+    }
+  ])
+  .<span class="code-function">select</span>()  <span class="code-comment">// 返回插入的数据</span></pre>
+        </div>
+
+        <h3 style="color: #667eea; margin: 30px 0 15px;">3️⃣ 更新数据（UPDATE）</h3>
+        <div class="code-block" data-lang="JavaScript">
+<pre><span class="code-comment">// 更新指定 ID 的商品</span>
+<span class="code-keyword">const</span> { data, error } = <span class="code-keyword">await</span> supabase
+  .<span class="code-function">from</span>(<span class="code-string">'products'</span>)
+  .<span class="code-function">update</span>({ <span class="code-function">price</span>: 180 })
+  .<span class="code-function">eq</span>(<span class="code-string">'id'</span>, 1)
+  .<span class="code-function">select</span>()</pre>
+        </div>
+
+        <h3 style="color: #667eea; margin: 30px 0 15px;">4️⃣ 删除数据（DELETE）</h3>
+        <div class="code-block" data-lang="JavaScript">
+<pre><span class="code-comment">// 删除指定 ID 的商品</span>
+<span class="code-keyword">const</span> { error } = <span class="code-keyword">await</span> supabase
+  .<span class="code-function">from</span>(<span class="code-string">'products'</span>)
+  .<span class="code-function">delete</span>()
+  .<span class="code-function">eq</span>(<span class="code-string">'id'</span>, 1)</pre>
+        </div>
+      </div>
+      <!-- 第十部分：认证与授权 -->
+      <div class="section">
+        <h2 class="section-title">🔐 认证与授权流程</h2>
+        <p style="font-size: 16px; line-height: 1.8; margin-bottom: 20px;">
+          Supabase Auth 提供了完整的用户认证系统，与数据库无缝集成。
+        </p>
+
+        <div class="code-block" data-lang="JavaScript">
+<pre><span class="code-comment">// 用户登录</span>
+<span class="code-keyword">const</span> { data, error } = <span class="code-keyword">await</span> supabase.auth.<span class="code-function">signInWithPassword</span>({
+  <span class="code-function">email</span>: <span class="code-string">'user@example.com'</span>,
+  <span class="code-function">password</span>: <span class="code-string">'password123'</span>
+})
+
+<span class="code-comment">// 登录成功后，Supabase 会：</span>
+<span class="code-comment">// 1. 返回一个 JWT token</span>
+<span class="code-comment">// 2. 将 token 保存到 localStorage</span>
+<span class="code-comment">// 3. 在后续所有请求中自动携带这个 token</span></pre>
+        </div>
+
+        <div class="explanation">
+          <h4>🎫 JWT Token 的作用</h4>
+          <p>
+            JWT（JSON Web Token）是一个加密的字符串，包含用户信息：<br><br>
+            
+            <strong>Token 结构：</strong><br>
+            <code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTIzIn0.signature</code><br><br>
+
+            <strong>包含的信息：</strong><br>
+            • 用户 ID (user_id)<br>
+            • 用户角色 (role)<br>
+            • 过期时间 (exp)<br>
+            • 签发时间 (iat)<br><br>
+
+            <strong>工作流程：</strong><br>
+            1. 用户登录成功，获得 JWT token<br>
+            2. 前端在每个请求的 Header 中携带 token<br>
+            3. Supabase 验证 token 的签名和有效期<br>
+            4. 提取 token 中的 user_id<br>
+            5. 在 SQL 查询中使用 <code>auth.uid()</code> 获取当前用户 ID<br>
+            6. RLS 策略根据用户 ID 过滤数据
+          </p>
+        </div>
+      </div>
+      <!-- 第十一部分：性能优化 -->
+      <div class="section">
+        <h2 class="section-title">⚡ 性能优化技巧</h2>
+
+        <div class="tip-box">
+          <h4>1. 使用索引加速查询</h4>
+          <div class="code-block" data-lang="SQL" style="margin-top: 15px;">
+<pre><span class="code-comment">-- 为常用查询字段创建索引</span>
+<span class="code-keyword">CREATE INDEX</span> idx_products_category <span class="code-keyword">ON</span> products(category);
+<span class="code-keyword">CREATE INDEX</span> idx_products_user_id <span class="code-keyword">ON</span> products(user_id);</pre>
+          </div>
+        </div>
+
+        <div class="tip-box">
+          <h4>2. 只查询需要的列</h4>
+          <div class="code-block" data-lang="JavaScript" style="margin-top: 15px;">
+<pre><span class="code-comment">// ❌ 不好：查询所有列</span>
+<span class="code-keyword">const</span> { data } = <span class="code-keyword">await</span> supabase.<span class="code-function">from</span>(<span class="code-string">'products'</span>).<span class="code-function">select</span>(<span class="code-string">'*'</span>)
+
+<span class="code-comment">// ✅ 好：只查询需要的列</span>
+<span class="code-keyword">const</span> { data } = <span class="code-keyword">await</span> supabase.<span class="code-function">from</span>(<span class="code-string">'products'</span>).<span class="code-function">select</span>(<span class="code-string">'id, name, price'</span>)</pre>
+          </div>
+        </div>
+
+        <div class="tip-box">
+          <h4>3. 使用分页减少数据量</h4>
+          <div class="code-block" data-lang="JavaScript" style="margin-top: 15px;">
+<pre><span class="code-comment">// 每页显示 10 条，获取第 2 页</span>
+<span class="code-keyword">const</span> { data } = <span class="code-keyword">await</span> supabase
+  .<span class="code-function">from</span>(<span class="code-string">'products'</span>)
+  .<span class="code-function">select</span>(<span class="code-string">'*'</span>)
+  .<span class="code-function">range</span>(10, 19)  <span class="code-comment">// 从第 10 条到第 19 条</span></pre>
+          </div>
+        </div>
+
+        <div class="tip-box">
+          <h4>4. 使用连接查询减少请求次数</h4>
+          <div class="code-block" data-lang="JavaScript" style="margin-top: 15px;">
+<pre><span class="code-comment">// 一次查询获取商品和卖家信息</span>
+<span class="code-keyword">const</span> { data } = <span class="code-keyword">await</span> supabase
+  .<span class="code-function">from</span>(<span class="code-string">'products'</span>)
+  .<span class="code-function">select</span>(<span class="code-string">`
+    *,
+    profiles:user_id (
+      username,
+      avatar_url
+    )
+  `</span>)</pre>
+          </div>
+        </div>
+      </div>
+      <!-- 第十二部分：常见问题 -->
+      <div class="section">
+        <h2 class="section-title">❓ 常见问题解答</h2>
+
+        <div class="explanation">
+          <h4>Q1: 为什么我的查询返回空数组？</h4>
+          <p>
+            <strong>可能原因：</strong><br>
+            1. RLS 策略阻止了访问 - 检查是否启用了 RLS 且策略配置正确<br>
+            2. 表中确实没有数据 - 在 Supabase 后台查看表内容<br>
+            3. 查询条件不匹配 - 检查 WHERE 条件是否正确<br><br>
+
+            <strong>调试方法：</strong><br>
+            • 在 Supabase 后台的 SQL Editor 中直接执行 SQL 查询<br>
+            • 临时禁用 RLS 测试：<code>ALTER TABLE products DISABLE ROW LEVEL SECURITY;</code><br>
+            • 查看浏览器控制台的网络请求，检查返回的错误信息
+          </p>
+        </div>
+
+        <div class="explanation">
+          <h4>Q2: 如何处理数据库连接错误？</h4>
+          <p>
+            <strong>常见错误：</strong><br>
+            • <code>Invalid API key</code> - 检查 .env.local 中的 API Key 是否正确<br>
+            • <code>Network error</code> - 检查网络连接，确认 Supabase URL 可访问<br>
+            • <code>JWT expired</code> - Token 过期，需要重新登录<br><br>
+
+            <strong>错误处理代码：</strong>
+          </p>
+        </div>
+
+        <div class="code-block" data-lang="JavaScript">
+<pre><span class="code-keyword">try</span> {
+  <span class="code-keyword">const</span> { data, error } = <span class="code-keyword">await</span> supabase.<span class="code-function">from</span>(<span class="code-string">'products'</span>).<span class="code-function">select</span>(<span class="code-string">'*'</span>)
+  
+  <span class="code-keyword">if</span> (error) {
+    <span class="code-comment">// Supabase 返回的错误</span>
+    <span class="code-function">console.error</span>(<span class="code-string">'Database error:'</span>, error.message)
+    <span class="code-keyword">return</span>
+  }
+  
+  <span class="code-keyword">return</span> data
+} <span class="code-keyword">catch</span> (err) {
+  <span class="code-comment">// 网络错误或其他异常</span>
+  <span class="code-function">console.error</span>(<span class="code-string">'Network error:'</span>, err)
+}</pre>
+        </div>
+
+        <div class="explanation">
+          <h4>Q3: 如何在本地开发环境使用 Supabase？</h4>
+          <p>
+            <strong>方法1：使用线上 Supabase 项目</strong><br>
+            • 直接使用 Supabase 云服务（推荐）<br>
+            • 配置 .env.local 指向线上项目<br><br>
+
+            <strong>方法2：使用本地 Supabase</strong><br>
+            • 安装 Docker Desktop<br>
+            • 安装 Supabase CLI<br>
+            • 运行 <code>supabase start</code><br>
+            • 修改 .env.local 指向本地地址（http://127.0.0.1:54321）
+          </p>
+        </div>
+      </div>
+      <!-- 第十三部分：总结 -->
+      <div class="section">
+        <h2 class="section-title">📚 总结</h2>
+        
+        <div style="background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); padding: 30px; border-radius: 15px;">
+          <h3 style="color: #667eea; margin-bottom: 20px; font-size: 24px;">🎯 核心知识点</h3>
+          
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+            <div style="background: white; padding: 20px; border-radius: 10px;">
+              <h4 style="color: #667eea; margin-bottom: 10px;">1️⃣ 配置连接</h4>
+              <p style="font-size: 14px; line-height: 1.6;">
+                • 在 .env.local 配置 URL 和 API Key<br>
+                • 使用 createClient 初始化客户端<br>
+                • 配置认证选项（持久化、自动刷新）
+              </p>
+            </div>
+            
+            <div style="background: white; padding: 20px; border-radius: 10px;">
+              <h4 style="color: #667eea; margin-bottom: 10px;">2️⃣ HTTP 通信</h4>
+              <p style="font-size: 14px; line-height: 1.6;">
+                • SDK 将操作转换为 HTTP 请求<br>
+                • 通过 HTTPS 加密传输<br>
+                • 自动携带 API Key 和 JWT Token
+              </p>
+            </div>
+            
+            <div style="background: white; padding: 20px; border-radius: 10px;">
+              <h4 style="color: #667eea; margin-bottom: 10px;">3️⃣ SQL 转换</h4>
+              <p style="font-size: 14px; line-height: 1.6;">
+                • Supabase 将 API 调用转换为 SQL<br>
+                • PostgreSQL 执行查询<br>
+                • 结果转换为 JSON 返回
+              </p>
+            </div>
+            
+            <div style="background: white; padding: 20px; border-radius: 10px;">
+              <h4 style="color: #667eea; margin-bottom: 10px;">4️⃣ RLS 安全</h4>
+              <p style="font-size: 14px; line-height: 1.6;">
+                • 行级安全策略保护数据<br>
+                • 基于用户 ID 自动过滤<br>
+                • 即使泄露 API Key 也安全
+              </p>
+            </div>
+            
+            <div style="background: white; padding: 20px; border-radius: 10px;">
+              <h4 style="color: #667eea; margin-bottom: 10px;">5️⃣ 认证授权</h4>
+              <p style="font-size: 14px; line-height: 1.6;">
+                • JWT Token 存储用户身份<br>
+                • 自动在请求中携带 Token<br>
+                • auth.uid() 获取当前用户
+              </p>
+            </div>
+            
+            <div style="background: white; padding: 20px; border-radius: 10px;">
+              <h4 style="color: #667eea; margin-bottom: 10px;">6️⃣ 性能优化</h4>
+              <p style="font-size: 14px; line-height: 1.6;">
+                • 创建索引加速查询<br>
+                • 只查询需要的列<br>
+                • 使用分页和连接查询
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="tip-box" style="margin-top: 30px;">
+          <h4>🌟 为什么这个架构好？</h4>
+          <ul style="margin-left: 20px; line-height: 1.8;">
+            <li><strong>简单：</strong>不需要自己搭建后端服务器</li>
+            <li><strong>安全：</strong>RLS 策略自动保护数据</li>
+            <li><strong>快速：</strong>几行代码就能实现数据库操作</li>
+            <li><strong>可扩展：</strong>支持实时订阅、文件存储等高级功能</li>
+            <li><strong>免费：</strong>提供慷慨的免费额度</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>
