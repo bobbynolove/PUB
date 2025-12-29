@@ -1,0 +1,823 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampusHub 邮箱验证实现详解</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      color: white;
+      padding: 40px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 36px;
+      margin-bottom: 10px;
+    }
+    .header p {
+      font-size: 18px;
+      opacity: 0.9;
+    }
+    .content {
+      padding: 40px;
+    }
+    .section {
+      margin-bottom: 50px;
+    }
+    .section-title {
+      font-size: 28px;
+      color: #11998e;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 3px solid #11998e;
+    }
+    .flow-diagram {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 30px 0;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .flow-step {
+      flex: 1;
+      min-width: 200px;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      padding: 25px;
+      border-radius: 15px;
+      text-align: center;
+      position: relative;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+    .flow-step:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(17, 153, 142, 0.3);
+    }
+    .flow-step.active {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      color: white;
+    }
+    .flow-step .number {
+      width: 40px;
+      height: 40px;
+      background: #11998e;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      margin: 0 auto 15px;
+      font-size: 20px;
+    }
+    .flow-step.active .number {
+      background: white;
+      color: #11998e;
+    }
+    .flow-step h3 {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    .flow-step p {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+    .arrow {
+      font-size: 30px;
+      color: #11998e;
+      font-weight: bold;
+    }
+    .code-block {
+      background: #2d3748;
+      color: #e2e8f0;
+      padding: 25px;
+      border-radius: 10px;
+      overflow-x: auto;
+      margin: 20px 0;
+      position: relative;
+    }
+    .code-block::before {
+      content: attr(data-lang);
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      background: #11998e;
+      color: white;
+      padding: 3px 10px;
+      border-radius: 5px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .code-block pre {
+      margin: 0;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .code-comment {
+      color: #68d391;
+    }
+    .code-keyword {
+      color: #f687b3;
+    }
+    .code-string {
+      color: #fbd38d;
+    }
+    .code-function {
+      color: #63b3ed;
+    }
+    .explanation {
+      background: #f7fafc;
+      padding: 20px;
+      border-left: 4px solid #11998e;
+      border-radius: 5px;
+      margin: 20px 0;
+    }
+    .explanation h4 {
+      color: #11998e;
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+    .explanation p {
+      line-height: 1.8;
+      color: #4a5568;
+    }
+    .highlight {
+      background: #fef5e7;
+      padding: 2px 6px;
+      border-radius: 3px;
+      color: #d97706;
+      font-weight: 600;
+    }
+    .tip-box {
+      background: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 100%);
+      padding: 20px;
+      border-radius: 10px;
+      margin: 20px 0;
+    }
+    .tip-box h4 {
+      color: #11998e;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .tip-box h4::before {
+      content: "💡";
+      font-size: 24px;
+    }
+    .tip-box ul {
+      margin-left: 20px;
+      line-height: 1.8;
+    }
+    .interactive-demo {
+      background: #f8fafc;
+      padding: 30px;
+      border-radius: 15px;
+      margin: 30px 0;
+      border: 2px dashed #11998e;
+    }
+    .demo-button {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: 600;
+    }
+    .demo-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(17, 153, 142, 0.4);
+    }
+    .demo-output {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      margin-top: 20px;
+      min-height: 100px;
+      border: 2px solid #e2e8f0;
+    }
+    @media (max-width: 768px) {
+      .flow-diagram {
+        flex-direction: column;
+      }
+      .arrow {
+        transform: rotate(90deg);
+      }
+      .header h1 {
+        font-size: 28px;
+      }
+      .content {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📧 CampusHub 邮箱验证实现详解</h1>
+      <p>从零开始理解 Supabase Auth 邮箱验证的完整流程</p>
+    </div>
+
+    <div class="content">
+      <!-- 第一部分：整体流程 -->
+      <div class="section">
+        <h2 class="section-title">📋 整体流程概览</h2>
+        <p style="font-size: 16px; line-height: 1.8; margin-bottom: 30px;">
+          邮箱验证是用户注册的重要环节，确保用户提供的邮箱地址真实有效。我们的系统使用 <span class="highlight">Supabase Auth</span> 服务来实现这一功能，整个流程分为5个步骤：
+        </p>
+        <div class="flow-diagram">
+          <div class="flow-step" onclick="highlightStep(1)">
+            <div class="number">1</div>
+            <h3>用户填写表单</h3>
+            <p>在注册页面输入邮箱、密码等信息</p>
+          </div>
+          <div class="arrow">→</div>
+          <div class="flow-step" onclick="highlightStep(2)">
+            <div class="number">2</div>
+            <h3>前端调用注册</h3>
+            <p>调用 signUpUser 函数提交数据</p>
+          </div>
+          <div class="arrow">→</div>
+          <div class="flow-step" onclick="highlightStep(3)">
+            <div class="number">3</div>
+            <h3>Supabase 处理</h3>
+            <p>创建账户并发送验证邮件</p>
+          </div>
+          <div class="arrow">→</div>
+          <div class="flow-step" onclick="highlightStep(4)">
+            <div class="number">4</div>
+            <h3>用户收到邮件</h3>
+            <p>点击邮件中的验证链接</p>
+          </div>
+          <div class="arrow">→</div>
+          <div class="flow-step" onclick="highlightStep(5)">
+            <div class="number">5</div>
+            <h3>账户激活</h3>
+            <p>验证成功，可以正常登录</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 第二部分：前端注册表单 -->
+      <div class="section">
+        <h2 class="section-title">🎨 步骤1：前端注册表单</h2>
+        <p style="font-size: 16px; line-height: 1.8; margin-bottom: 20px;">
+          用户在 <span class="highlight">RegisterView.vue</span> 页面填写注册信息。表单包含用户名、邮箱、密码等字段，并进行前端验证。
+        </p>
+        <div class="code-block" data-lang="Vue Template">
+<pre>&lt;!-- 注册表单模板 --&gt;
+&lt;<span class="code-keyword">el-form</span> <span class="code-function">ref</span>=<span class="code-string">"formRef"</span> <span class="code-function">:model</span>=<span class="code-string">"form"</span> <span class="code-function">:rules</span>=<span class="code-string">"rules"</span>&gt;
+  <span class="code-comment">&lt;!-- 用户名输入框 --&gt;</span>
+  &lt;<span class="code-keyword">el-form-item</span> <span class="code-function">prop</span>=<span class="code-string">"username"</span>&gt;
+    &lt;<span class="code-keyword">el-input</span> <span class="code-function">v-model</span>=<span class="code-string">"form.username"</span> <span class="code-function">placeholder</span>=<span class="code-string">"用户名"</span> /&gt;
+  &lt;/<span class="code-keyword">el-form-item</span>&gt;
+  
+  <span class="code-comment">&lt;!-- 邮箱输入框（关键！） --&gt;</span>
+  &lt;<span class="code-keyword">el-form-item</span> <span class="code-function">prop</span>=<span class="code-string">"email"</span>&gt;
+    &lt;<span class="code-keyword">el-input</span> <span class="code-function">v-model</span>=<span class="code-string">"form.email"</span> <span class="code-function">placeholder</span>=<span class="code-string">"邮箱"</span> /&gt;
+  &lt;/<span class="code-keyword">el-form-item</span>&gt;
+  
+  <span class="code-comment">&lt;!-- 密码输入框 --&gt;</span>
+  &lt;<span class="code-keyword">el-form-item</span> <span class="code-function">prop</span>=<span class="code-string">"password"</span>&gt;
+    &lt;<span class="code-keyword">el-input</span> <span class="code-function">v-model</span>=<span class="code-string">"form.password"</span> <span class="code-function">type</span>=<span class="code-string">"password"</span> /&gt;
+  &lt;/<span class="code-keyword">el-form-item</span>&gt;
+  
+  <span class="code-comment">&lt;!-- 提交按钮 --&gt;</span>
+  &lt;<span class="code-keyword">el-button</span> <span class="code-function">@click</span>=<span class="code-string">"handleSubmit"</span>&gt;注册&lt;/<span class="code-keyword">el-button</span>&gt;
+&lt;/<span class="code-keyword">el-form</span>&gt;</pre>
+        </div>
+
+        <div class="explanation">
+          <h4>📝 代码说明</h4>
+          <p>
+            • <span class="highlight">v-model</span>：双向绑定表单数据到 form 对象<br>
+            • <span class="highlight">:rules</span>：定义验证规则，确保邮箱格式正确<br>
+            • <span class="highlight">@click="handleSubmit"</span>：点击按钮时触发注册函数
+          </p>
+        </div>
+        <div class="code-block" data-lang="JavaScript">
+<pre><span class="code-comment">// 表单验证规则</span>
+<span class="code-keyword">const</span> rules = {
+  <span class="code-function">email</span>: [
+    { <span class="code-function">required</span>: <span class="code-keyword">true</span>, <span class="code-function">message</span>: <span class="code-string">'请输入邮箱'</span> },
+    { <span class="code-function">type</span>: <span class="code-string">'email'</span>, <span class="code-function">message</span>: <span class="code-string">'请输入有效的邮箱地址'</span> }
+  ],
+  <span class="code-function">password</span>: [
+    { <span class="code-function">required</span>: <span class="code-keyword">true</span>, <span class="code-function">message</span>: <span class="code-string">'请输入密码'</span> },
+    { <span class="code-function">min</span>: 6, <span class="code-function">message</span>: <span class="code-string">'密码至少6位'</span> }
+  ]
+}</pre>
+        </div>
+
+        <div class="tip-box">
+          <h4>小白提示</h4>
+          <ul>
+            <li><strong>Element Plus</strong> 是一个 Vue 3 的 UI 组件库，提供了现成的表单组件</li>
+            <li><strong>表单验证</strong>会在用户提交前检查数据格式，避免无效数据提交到服务器</li>
+            <li><strong>邮箱验证规则</strong>使用正则表达式检查邮箱格式（如 user@example.com）</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 第三部分：提交注册请求 -->
+      <div class="section">
+        <h2 class="section-title">🚀 步骤2：提交注册请求</h2>
+        <p style="font-size: 16px; line-height: 1.8; margin-bottom: 20px;">
+          当用户点击"注册"按钮后，前端会调用 <span class="highlight">handleSubmit</span> 函数，该函数会验证表单并调用后端 API。
+        </p>
+        <div class="code-block" data-lang="JavaScript">
+<pre><span class="code-comment">// RegisterView.vue 中的提交函数</span>
+<span class="code-keyword">async function</span> <span class="code-function">handleSubmit</span>() {
+  <span class="code-keyword">try</span> {
+    <span class="code-comment">// 1. 验证表单数据</span>
+    <span class="code-keyword">await</span> formRef.value.<span class="code-function">validate</span>()
+    
+    <span class="code-comment">// 2. 显示加载状态</span>
+    loading.value = <span class="code-keyword">true</span>
+    
+    <span class="code-comment">// 3. 调用注册函数（重点！）</span>
+    <span class="code-keyword">await</span> <span class="code-function">signUpUser</span>({ 
+      <span class="code-function">email</span>: form.email, 
+      <span class="code-function">password</span>: form.password, 
+      <span class="code-function">username</span>: form.username 
+    })
+
+    <span class="code-comment">// 4. 显示成功提示</span>
+    ElMessage.<span class="code-function">success</span>(<span class="code-string">'注册成功，请检查您的邮箱以验证您的帐户。'</span>)
+    
+    <span class="code-comment">// 5. 2秒后跳转到登录页</span>
+    <span class="code-function">setTimeout</span>(() => router.<span class="code-function">push</span>(<span class="code-string">'/login'</span>), 2000)
+    
+  } <span class="code-keyword">catch</span> (error) {
+    <span class="code-comment">// 显示错误信息</span>
+    ElMessage.<span class="code-function">error</span>(<span class="code-function">translateError</span>(error.message))
+  } <span class="code-keyword">finally</span> {
+    <span class="code-comment">// 隐藏加载状态</span>
+    loading.value = <span class="code-keyword">false</span>
+  }
+}</pre>
+        </div>
+
+        <div class="explanation">
+          <h4>🔍 执行流程详解</h4>
+          <p>
+            <strong>第1步：</strong>调用 <span class="highlight">formRef.value.validate()</span> 验证所有表单字段<br>
+            <strong>第2步：</strong>设置 loading 状态，防止用户重复提交<br>
+            <strong>第3步：</strong>调用 <span class="highlight">signUpUser</span> 函数，这是核心步骤！<br>
+            <strong>第4步：</strong>注册成功后显示提示信息<br>
+            <strong>第5步：</strong>自动跳转到登录页面
+          </p>
+        </div>
+      </div>
+      <!-- 第四部分：Supabase Auth 调用 -->
+      <div class="section">
+        <h2 class="section-title">⚡ 步骤3：Supabase Auth 处理注册</h2>
+        <p style="font-size: 16px; line-height: 1.8; margin-bottom: 20px;">
+          <span class="highlight">signUpUser</span> 函数位于 <span class="highlight">src/utils/storage.js</span> 文件中，它负责调用 Supabase 的认证 API。
+        </p>
+
+        <div class="code-block" data-lang="JavaScript">
+<pre><span class="code-comment">// storage.js 中的注册函数</span>
+<span class="code-keyword">export const</span> <span class="code-function">signUpUser</span> = <span class="code-keyword">async</span> ({ email, password, username }) => {
+  <span class="code-comment">// 调用 Supabase Auth API</span>
+  <span class="code-keyword">const</span> { data, error } = <span class="code-keyword">await</span> supabase.auth.<span class="code-function">signUp</span>({
+    <span class="code-function">email</span>,        <span class="code-comment">// 用户邮箱</span>
+    <span class="code-function">password</span>,     <span class="code-comment">// 用户密码</span>
+    <span class="code-function">options</span>: {
+      <span class="code-function">data</span>: {
+        <span class="code-function">username</span>  <span class="code-comment">// 额外的用户信息（存储在 user_metadata 中）</span>
+      }
+    }
+  })
+  
+  <span class="code-comment">// 如果出错，抛出异常</span>
+  <span class="code-keyword">if</span> (error) <span class="code-keyword">throw</span> error
+  
+  <span class="code-comment">// 返回注册结果</span>
+  <span class="code-keyword">return</span> data
+}</pre>
+        </div>
+
+        <div class="explanation">
+          <h4>🎯 关键点解析</h4>
+          <p>
+            • <span class="highlight">supabase.auth.signUp()</span>：这是 Supabase 提供的注册方法<br>
+            • <span class="highlight">email 和 password</span>：必填参数，用于创建账户<br>
+            • <span class="highlight">options.data</span>：可选参数，存储额外的用户信息（如用户名）<br>
+            • <span class="highlight">自动发送邮件</span>：Supabase 会自动向用户邮箱发送验证链接！
+          </p>
+        </div>
+        <div class="tip-box">
+          <h4>Supabase 在背后做了什么？</h4>
+          <ul>
+            <li><strong>创建用户账户：</strong>在 auth.users 表中创建一条记录</li>
+            <li><strong>生成验证令牌：</strong>创建一个唯一的验证 token</li>
+            <li><strong>发送验证邮件：</strong>使用 Supabase 的邮件服务发送包含验证链接的邮件</li>
+            <li><strong>设置账户状态：</strong>将账户标记为"未验证"状态</li>
+            <li><strong>触发数据库触发器：</strong>自动在 profiles 表中创建用户资料</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 第五部分：Supabase 配置 -->
+      <div class="section">
+        <h2 class="section-title">⚙️ Supabase 客户端配置</h2>
+        <p style="font-size: 16px; line-height: 1.8; margin-bottom: 20px;">
+          在使用 Supabase 之前，需要先初始化客户端。配置文件位于 <span class="highlight">src/supabase.js</span>。
+        </p>
+
+        <div class="code-block" data-lang="JavaScript">
+<pre><span class="code-comment">// supabase.js - Supabase 客户端初始化</span>
+<span class="code-keyword">import</span> { createClient } <span class="code-keyword">from</span> <span class="code-string">'@supabase/supabase-js'</span>
+
+<span class="code-comment">// 从环境变量读取配置</span>
+<span class="code-keyword">const</span> supabaseUrl = <span class="code-function">import.meta.env</span>.VITE_SUPABASE_URL
+<span class="code-keyword">const</span> supabaseAnonKey = <span class="code-function">import.meta.env</span>.VITE_SUPABASE_ANON_KEY
+
+<span class="code-comment">// 创建 Supabase 客户端实例</span>
+<span class="code-keyword">export const</span> supabase = <span class="code-function">createClient</span>(supabaseUrl, supabaseAnonKey, {
+  <span class="code-function">auth</span>: {
+    <span class="code-function">persistSession</span>: <span class="code-keyword">true</span>,        <span class="code-comment">// 持久化会话（保持登录状态）</span>
+    <span class="code-function">autoRefreshToken</span>: <span class="code-keyword">true</span>,      <span class="code-comment">// 自动刷新令牌</span>
+    <span class="code-function">detectSessionInUrl</span>: <span class="code-keyword">true</span>    <span class="code-comment">// 从 URL 中检测会话（用于邮箱验证）</span>
+  }
+})</pre>
+        </div>
+        <div class="explanation">
+          <h4>🔧 配置项说明</h4>
+          <p>
+            • <span class="highlight">supabaseUrl</span>：你的 Supabase 项目地址<br>
+            • <span class="highlight">supabaseAnonKey</span>：匿名访问密钥（公开的，用于前端）<br>
+            • <span class="highlight">persistSession</span>：将登录状态保存到浏览器，刷新页面不会退出登录<br>
+            • <span class="highlight">detectSessionInUrl</span>：<strong>关键配置！</strong>允许从邮件链接中提取验证信息
+          </p>
+        </div>
+
+        <div class="tip-box">
+          <h4>为什么需要 detectSessionInUrl？</h4>
+          <ul>
+            <li>用户点击邮件中的验证链接时，链接包含验证 token</li>
+            <li>Supabase 会自动从 URL 中提取 token 并完成验证</li>
+            <li>验证成功后，用户会被重定向到你设置的页面</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 第六部分：邮件验证流程 -->
+      <div class="section">
+        <h2 class="section-title">📬 步骤4：用户收到验证邮件</h2>
+        <p style="font-size: 16px; line-height: 1.8; margin-bottom: 20px;">
+          Supabase 会自动发送一封验证邮件到用户的邮箱，邮件内容包含一个验证链接。
+        </p>
+
+        <div class="interactive-demo">
+          <h3 style="margin-bottom: 20px; color: #11998e;">📧 验证邮件示例</h3>
+          <div style="background: white; padding: 30px; border-radius: 10px; border: 1px solid #e2e8f0;">
+            <h4 style="color: #1e293b; margin-bottom: 15px;">确认您的邮箱地址</h4>
+            <p style="line-height: 1.8; color: #4a5568; margin-bottom: 20px;">
+              感谢您注册 CampusHub！请点击下面的按钮验证您的邮箱地址：
+            </p>
+            <button class="demo-button" onclick="showVerificationProcess()">
+              验证我的邮箱
+            </button>
+            <p style="margin-top: 20px; font-size: 14px; color: #64748b;">
+              或复制此链接到浏览器：<br>
+              <code style="background: #f1f5f9; padding: 5px 10px; border-radius: 5px; display: inline-block; margin-top: 10px;">
+                https://your-project.supabase.co/auth/v1/verify?token=xxx&type=signup
+              </code>
+            </p>
+          </div>
+        </div>
+        <div class="explanation">
+          <h4>🔗 验证链接的组成</h4>
+          <p>
+            验证链接包含以下参数：<br>
+            • <span class="highlight">token</span>：唯一的验证令牌，用于识别用户<br>
+            • <span class="highlight">type=signup</span>：表示这是注册验证<br>
+            • <span class="highlight">redirect_to</span>：验证成功后跳转的页面（可在 Supabase 后台配置）
+          </p>
+        </div>
+      </div>
+
+      <!-- 第七部分：验证完成 -->
+      <div class="section">
+        <h2 class="section-title">✅ 步骤5：验证完成，账户激活</h2>
+        <p style="font-size: 16px; line-height: 1.8; margin-bottom: 20px;">
+          当用户点击验证链接后，Supabase 会自动处理验证逻辑，并更新用户的验证状态。
+        </p>
+
+        <div class="code-block" data-lang="流程说明">
+<pre>1. 用户点击邮件中的验证链接
+   ↓
+2. 浏览器打开链接，Supabase 提取 token
+   ↓
+3. Supabase 验证 token 的有效性
+   ↓
+4. 更新数据库：将 email_confirmed_at 字段设置为当前时间
+   ↓
+5. 重定向用户到指定页面（通常是登录页或首页）
+   ↓
+6. 用户现在可以正常登录了！</pre>
+        </div>
+
+        <div class="tip-box">
+          <h4>验证后的数据库变化</h4>
+          <ul>
+            <li><strong>auth.users 表：</strong>email_confirmed_at 字段从 NULL 变为时间戳</li>
+            <li><strong>用户状态：</strong>从"未验证"变为"已验证"</li>
+            <li><strong>登录权限：</strong>用户现在可以使用邮箱和密码登录</li>
+          </ul>
+        </div>
+      </div>
+      <!-- 第八部分：完整代码示例 -->
+      <div class="section">
+        <h2 class="section-title">💻 完整代码示例</h2>
+        <p style="font-size: 16px; line-height: 1.8; margin-bottom: 20px;">
+          下面是一个简化的完整示例，展示从注册到验证的所有关键代码：
+        </p>
+
+        <div class="code-block" data-lang="完整流程">
+<pre><span class="code-comment">// ========== 1. 初始化 Supabase ==========</span>
+<span class="code-keyword">import</span> { createClient } <span class="code-keyword">from</span> <span class="code-string">'@supabase/supabase-js'</span>
+
+<span class="code-keyword">const</span> supabase = <span class="code-function">createClient</span>(
+  <span class="code-string">'YOUR_SUPABASE_URL'</span>,
+  <span class="code-string">'YOUR_SUPABASE_ANON_KEY'</span>,
+  { <span class="code-function">auth</span>: { <span class="code-function">detectSessionInUrl</span>: <span class="code-keyword">true</span> } }
+)
+
+<span class="code-comment">// ========== 2. 注册函数 ==========</span>
+<span class="code-keyword">async function</span> <span class="code-function">registerUser</span>(email, password, username) {
+  <span class="code-keyword">const</span> { data, error } = <span class="code-keyword">await</span> supabase.auth.<span class="code-function">signUp</span>({
+    <span class="code-function">email</span>,
+    <span class="code-function">password</span>,
+    <span class="code-function">options</span>: {
+      <span class="code-function">data</span>: { <span class="code-function">username</span> }
+    }
+  })
+  
+  <span class="code-keyword">if</span> (error) {
+    <span class="code-function">console.error</span>(<span class="code-string">'注册失败：'</span>, error.message)
+    <span class="code-keyword">return</span>
+  }
+  
+  <span class="code-function">console.log</span>(<span class="code-string">'注册成功！请检查邮箱验证。'</span>)
+  <span class="code-function">console.log</span>(<span class="code-string">'用户信息：'</span>, data.user)
+}
+
+<span class="code-comment">// ========== 3. 调用注册 ==========</span>
+<span class="code-function">registerUser</span>(
+  <span class="code-string">'user@example.com'</span>,
+  <span class="code-string">'password123'</span>,
+  <span class="code-string">'张三'</span>
+)</pre>
+        </div>
+      </div>
+      <!-- 第九部分：常见问题 -->
+      <div class="section">
+        <h2 class="section-title">❓ 常见问题解答</h2>
+        
+        <div class="explanation">
+          <h4>Q1: 为什么收不到验证邮件？</h4>
+          <p>
+            • 检查邮箱地址是否正确<br>
+            • 查看垃圾邮件文件夹<br>
+            • 确认 Supabase 项目的邮件服务已启用<br>
+            • 检查 Supabase 后台的邮件模板配置
+          </p>
+        </div>
+
+        <div class="explanation">
+          <h4>Q2: 验证链接过期了怎么办？</h4>
+          <p>
+            • 默认情况下，验证链接24小时内有效<br>
+            • 可以在 Supabase 后台重新发送验证邮件<br>
+            • 或者让用户重新注册（如果账户未激活）
+          </p>
+        </div>
+
+        <div class="explanation">
+          <h4>Q3: 可以自定义验证邮件的内容吗？</h4>
+          <p>
+            • 可以！在 Supabase 后台的 Authentication → Email Templates 中修改<br>
+            • 可以自定义邮件标题、内容、按钮文字等<br>
+            • 支持 HTML 格式和变量替换
+          </p>
+        </div>
+
+        <div class="explanation">
+          <h4>Q4: 如何检查用户是否已验证邮箱？</h4>
+          <p>
+            • 在用户对象中检查 <span class="highlight">email_confirmed_at</span> 字段<br>
+            • 如果该字段不为 null，说明邮箱已验证<br>
+            • 示例代码：
+          </p>
+        </div>
+
+        <div class="code-block" data-lang="JavaScript">
+<pre><span class="code-keyword">const</span> { data: { user } } = <span class="code-keyword">await</span> supabase.auth.<span class="code-function">getUser</span>()
+
+<span class="code-keyword">if</span> (user.email_confirmed_at) {
+  <span class="code-function">console.log</span>(<span class="code-string">'邮箱已验证'</span>)
+} <span class="code-keyword">else</span> {
+  <span class="code-function">console.log</span>(<span class="code-string">'邮箱未验证'</span>)
+}</pre>
+        </div>
+      </div>
+      <!-- 第十部分：进阶配置 -->
+      <div class="section">
+        <h2 class="section-title">🚀 进阶配置</h2>
+        
+        <div class="tip-box">
+          <h4>自定义验证后的重定向页面</h4>
+          <ul>
+            <li>在 Supabase 后台的 Authentication → URL Configuration 中设置</li>
+            <li>设置 <strong>Site URL</strong> 为你的应用地址（如 http://localhost:5173）</li>
+            <li>设置 <strong>Redirect URLs</strong> 添加允许的重定向地址</li>
+          </ul>
+        </div>
+
+        <div class="code-block" data-lang="JavaScript">
+<pre><span class="code-comment">// 在注册时指定验证后的重定向地址</span>
+<span class="code-keyword">const</span> { data, error } = <span class="code-keyword">await</span> supabase.auth.<span class="code-function">signUp</span>({
+  <span class="code-function">email</span>: <span class="code-string">'user@example.com'</span>,
+  <span class="code-function">password</span>: <span class="code-string">'password123'</span>,
+  <span class="code-function">options</span>: {
+    <span class="code-function">emailRedirectTo</span>: <span class="code-string">'http://localhost:5173/welcome'</span>
+  }
+})</pre>
+        </div>
+
+        <div class="tip-box">
+          <h4>监听验证状态变化</h4>
+          <ul>
+            <li>使用 Supabase 的 <strong>onAuthStateChange</strong> 监听器</li>
+            <li>当用户完成验证后，会触发 SIGNED_IN 事件</li>
+            <li>可以在这里执行自动登录或跳转逻辑</li>
+          </ul>
+        </div>
+
+        <div class="code-block" data-lang="JavaScript">
+<pre><span class="code-comment">// 监听认证状态变化</span>
+supabase.auth.<span class="code-function">onAuthStateChange</span>((event, session) => {
+  <span class="code-keyword">if</span> (event === <span class="code-string">'SIGNED_IN'</span>) {
+    <span class="code-function">console.log</span>(<span class="code-string">'用户已登录：'</span>, session.user)
+    <span class="code-comment">// 可以在这里跳转到首页或执行其他操作</span>
+  }
+  
+  <span class="code-keyword">if</span> (event === <span class="code-string">'USER_UPDATED'</span>) {
+    <span class="code-function">console.log</span>(<span class="code-string">'用户信息已更新'</span>)
+  }
+})</pre>
+        </div>
+      </div>
+      <!-- 第十一部分：总结 -->
+      <div class="section">
+        <h2 class="section-title">📚 总结</h2>
+        
+        <div style="background: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 100%); padding: 30px; border-radius: 15px;">
+          <h3 style="color: #11998e; margin-bottom: 20px; font-size: 24px;">🎯 核心要点回顾</h3>
+          
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px;">
+            <div style="background: white; padding: 20px; border-radius: 10px;">
+              <h4 style="color: #11998e; margin-bottom: 10px;">1️⃣ 前端表单</h4>
+              <p style="font-size: 14px; line-height: 1.6;">使用 Element Plus 创建注册表单，包含邮箱验证规则</p>
+            </div>
+            
+            <div style="background: white; padding: 20px; border-radius: 10px;">
+              <h4 style="color: #11998e; margin-bottom: 10px;">2️⃣ 调用 API</h4>
+              <p style="font-size: 14px; line-height: 1.6;">使用 supabase.auth.signUp() 提交注册信息</p>
+            </div>
+            
+            <div style="background: white; padding: 20px; border-radius: 10px;">
+              <h4 style="color: #11998e; margin-bottom: 10px;">3️⃣ 自动发邮件</h4>
+              <p style="font-size: 14px; line-height: 1.6;">Supabase 自动发送包含验证链接的邮件</p>
+            </div>
+            
+            <div style="background: white; padding: 20px; border-radius: 10px;">
+              <h4 style="color: #11998e; margin-bottom: 10px;">4️⃣ 用户验证</h4>
+              <p style="font-size: 14px; line-height: 1.6;">用户点击邮件链接完成验证</p>
+            </div>
+            
+            <div style="background: white; padding: 20px; border-radius: 10px;">
+              <h4 style="color: #11998e; margin-bottom: 10px;">5️⃣ 账户激活</h4>
+              <p style="font-size: 14px; line-height: 1.6;">验证成功后用户可以正常登录</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="tip-box" style="margin-top: 30px;">
+          <h4>🌟 为什么选择 Supabase？</h4>
+          <ul>
+            <li><strong>开箱即用：</strong>无需自己搭建邮件服务器</li>
+            <li><strong>安全可靠：</strong>内置安全机制，防止恶意注册</li>
+            <li><strong>易于集成：</strong>几行代码即可实现完整功能</li>
+            <li><strong>免费额度：</strong>每月提供免费的邮件发送额度</li>
+            <li><strong>可定制化：</strong>支持自定义邮件模板和验证流程</li>
+          </ul>
+        </div>
+      </div>
+      <!-- 交互式演示区域 -->
+      <div class="section">
+        <h2 class="section-title">🎮 互动演示</h2>
+        <div class="interactive-demo">
+          <h3 style="margin-bottom: 20px; color: #11998e;">点击按钮模拟注册流程</h3>
+          <button class="demo-button" onclick="simulateRegistration()">
+            🚀 开始模拟注册
+          </button>
+          <div id="demo-output" class="demo-output" style="display: none;">
+            <div id="demo-content"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    let currentStep = 0;
+
+    function highlightStep(step) {
+      const steps = document.querySelectorAll('.flow-step');
+      steps.forEach((s, index) => {
+        if (index + 1 === step) {
+          s.classList.add('active');
+        } else {
+          s.classList.remove('active');
+        }
+      });
+    }
+
+    function showVerificationProcess() {
+      alert('✅ 验证成功！\n\n您的邮箱已验证，现在可以登录 CampusHub 了。\n\n（这是一个演示，实际验证会由 Supabase 处理）');
+    }
+
+    function simulateRegistration() {
+      const output = document.getElementById('demo-output');
+      const content = document.getElementById('demo-content');
+      output.style.display = 'block';
+      
+      const steps = [
+        { time: 0, message: '📝 用户填写注册表单...', step: 1 },
+        { time: 1000, message: '✅ 表单验证通过', step: 1 },
+        { time: 2000, message: '🚀 调用 signUpUser 函数...', step: 2 },
+        { time: 3000, message: '📡 发送请求到 Supabase...', step: 3 },
+        { time: 4000, message: '✅ Supabase 创建用户账户', step: 3 },
+        { time: 5000, message: '📧 Supabase 发送验证邮件...', step: 3 },
+        { time: 6000, message: '✅ 邮件发送成功', step: 4 },
+        { time: 7000, message: '📬 用户收到验证邮件', step: 4 },
+        { time: 8000, message: '🖱️ 用户点击验证链接...', step: 4 },
+        { time: 9000, message: '🔐 Supabase 验证 token...', step: 5 },
+        { time: 10000, message: '✅ 验证成功！账户已激活', step: 5 },
+        { time: 11000, message: '🎉 注册流程完成！用户可以登录了', step: 5 }
+      ];
+
+      content.innerHTML = '';
+      
+      steps.forEach(({ time, message, step }) => {
+        setTimeout(() => {
+          const line = document.createElement('div');
+          line.style.padding = '8px 0';
+          line.style.borderBottom = '1px solid #e2e8f0';
+          line.textContent = message;
+          content.appendChild(line);
+          content.scrollTop = content.scrollHeight;
+          highlightStep(step);
+        }, time);
+      });
+    }
+
+    // 页面加载时高亮第一步
+    window.addEventListener('load', () => {
+      highlightStep(1);
+    });
+  </script>
+</body>
+</html>
